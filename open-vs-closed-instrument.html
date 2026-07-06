@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weights &amp; Measures — an instrument for the open/closed question</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg:#0f1317;
+    --panel:#171c22;
+    --panel-2:#1d242c;
+    --line:#323d49;
+    --text:#f1f4f7;
+    --muted:#b6c0ca;
+    --faint:#9aa6b1;
+    --open:#5fc4ab;
+    --open-dim:#357262;
+    --closed:#e0a955;
+    --closed-dim:#8a6a33;
+    --focus:#bcd2e4;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} *{transition:none !important; animation:none !important;} }
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size:17px; line-height:1.6;
+  }
+  h1,h2,h3{font-family:"Space Grotesk", -apple-system, sans-serif;}
+  .mono{font-family:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;}
+
+  a{color:var(--open);}
+  :focus-visible{outline:3px solid var(--focus); outline-offset:2px; border-radius:3px;}
+
+  #beamBar{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(180deg, rgba(15,19,23,.97) 78%, rgba(15,19,23,0));
+    padding:10px 20px 12px;
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(4px);
+  }
+  .beam-actions{display:flex; gap:6px; align-items:center;}
+  button.mini{padding:4px 11px; font-size:12px; border-radius:4px;}
+  .beam-wrap{max-width:920px; margin:0 auto;}
+  .beam-labels{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:"IBM Plex Mono", monospace; font-size:13px; letter-spacing:.08em;
+    margin-bottom:6px;
+  }
+  .beam-labels .pole-open{color:var(--open); font-weight:500;}
+  .beam-labels .pole-closed{color:var(--closed); font-weight:500;}
+  .beam-labels .band-name{color:var(--text); font-size:12.5px; text-transform:uppercase;}
+  .beam-track{
+    position:relative; height:28px; border:1px solid var(--line); border-radius:4px;
+    background:var(--panel); overflow:visible;
+  }
+  .beam-half{position:absolute; top:0; bottom:0; width:50%; display:flex; overflow:hidden;}
+  .beam-half.open-side{right:50%; flex-direction:row-reverse; border-radius:4px 0 0 4px;}
+  .beam-half.closed-side{left:50%; border-radius:0 4px 4px 0;}
+  .beam-seg{height:100%; min-width:0; transition:width .25s ease; position:relative;}
+  .beam-half.open-side .beam-seg{background:var(--open); }
+  .beam-half.closed-side .beam-seg{background:var(--closed);}
+  .beam-seg:nth-child(even){filter:brightness(.75);}
+  .beam-center{
+    position:absolute; left:50%; top:-4px; bottom:-4px; width:2px;
+    background:var(--faint);
+  }
+  .beam-needle{
+    position:absolute; top:-10px; width:0; height:0; transform:translateX(-7px);
+    border-left:7px solid transparent; border-right:7px solid transparent;
+    border-top:10px solid var(--text);
+    transition:left .25s ease;
+  }
+  .beam-caption{
+    margin-top:8px; font-size:14px; color:var(--muted);
+    display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .beam-caption .totals{font-family:"IBM Plex Mono",monospace; font-size:13px;}
+  .beam-caption .totals .o{color:var(--open);} .beam-caption .totals .c{color:var(--closed);}
+
+  main{max-width:920px; margin:0 auto; padding:36px 20px 90px;}
+  header.masthead{margin:26px 0 14px;}
+  header.masthead .kicker{
+    font-family:"IBM Plex Mono",monospace; font-size:13px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--muted); margin-bottom:10px;
+  }
+  header.masthead h1{font-size:38px; font-weight:700; line-height:1.15; letter-spacing:-.01em;}
+  header.masthead h1 .open-w{color:var(--open);} header.masthead h1 .closed-w{color:var(--closed);}
+  header.masthead p.lede{margin-top:16px; color:var(--muted); max-width:62ch; font-size:17px;}
+
+  .notice{
+    margin:24px 0 8px; padding:16px 18px; border:1px solid var(--line);
+    border-left:4px solid var(--faint); background:var(--panel); border-radius:4px;
+    font-size:15.5px; color:var(--muted); max-width:76ch;
+  }
+  .notice b{color:var(--text);}
+
+  section{margin-top:56px;}
+  .part-head{display:flex; align-items:baseline; gap:14px; border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:8px;}
+  .part-head .pn{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--faint); letter-spacing:.1em;}
+  .part-head h2{font-size:24px; font-weight:600;}
+  .part-sub{color:var(--muted); font-size:15.5px; max-width:70ch; margin-bottom:22px;}
+
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    padding:18px 20px 16px; margin-bottom:16px;
+  }
+  .card .tagline{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;}
+  .card .tag{font-family:"IBM Plex Mono",monospace; font-size:12.5px; letter-spacing:.1em; color:var(--faint);}
+  .card .readnum{font-family:"IBM Plex Mono",monospace; font-size:17px; min-width:58px; text-align:right; font-weight:500;}
+  .card .stmt{font-family:"Space Grotesk",sans-serif; font-size:18.5px; font-weight:500; line-height:1.45; max-width:64ch;}
+  .card .elab{color:var(--muted); font-size:15px; margin-top:8px; max-width:70ch;}
+  .card .probe{color:var(--muted); font-size:14.5px; font-style:italic; margin-top:10px; max-width:70ch;}
+  .card .probe b{color:var(--text); font-style:normal; font-weight:500;}
+
+  .feeds{margin-top:12px; display:flex; gap:7px; flex-wrap:wrap;}
+  .chip{
+    font-family:"IBM Plex Mono",monospace; font-size:12px; padding:3px 10px;
+    border-radius:11px; border:1px solid var(--line); color:var(--muted);
+  }
+  .chip.open{border-color:var(--open-dim); color:var(--open);}
+  .chip.closed{border-color:var(--closed-dim); color:var(--closed);}
+
+  .slider-row{display:flex; align-items:center; gap:14px; margin-top:14px;}
+  .slider-row .end{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint); width:104px; line-height:1.3;}
+  .slider-row .end.r{text-align:right;}
+  input[type=range]{
+    flex:1; -webkit-appearance:none; appearance:none; height:6px; border-radius:3px;
+    background:var(--line); cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:20px; height:20px; border-radius:50%;
+    background:var(--text); border:2px solid var(--bg); box-shadow:0 0 0 1.5px var(--faint);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:17px; height:17px; border-radius:50%;
+    background:var(--text); border:2px solid var(--bg); box-shadow:0 0 0 1.5px var(--faint);
+  }
+
+  .wiring-note{font-size:15px; color:var(--muted); max-width:72ch; margin-bottom:18px;}
+  .pull-table{width:100%; border-collapse:collapse;}
+  .pull-table th{
+    font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--faint); text-align:left; padding:7px 8px; border-bottom:1px solid var(--line);
+  }
+  .pull-table td{padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:middle; font-size:15px;}
+  .pull-table .pname{font-weight:500; white-space:nowrap;}
+  .pull-table .formula{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--faint);}
+  .pull-table .pval{font-family:"IBM Plex Mono",monospace; font-size:14px; text-align:right; min-width:52px; font-weight:500;}
+  .pullbar-cell{width:30%;}
+  .pullbar{position:relative; height:14px; background:var(--panel-2); border-radius:2px; overflow:hidden;}
+  .pullbar .fill{position:absolute; top:0; bottom:0; border-radius:2px; transition:width .25s ease;}
+  .pullbar .fill.open{background:var(--open); left:0;}
+  .pullbar .fill.closed{background:var(--closed); left:0;}
+
+  .tornado{margin-top:8px;}
+  .trow{display:grid; grid-template-columns:230px 1fr 130px; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line);}
+  .trow .tname{font-size:15px;}
+  .trow .tname .tt{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint); display:block;}
+  .taxis{position:relative; height:16px; background:var(--panel-2); border-radius:2px;}
+  .taxis .zero{position:absolute; left:50%; top:-3px; bottom:-3px; width:2px; background:var(--faint);}
+  .taxis .span{position:absolute; top:2px; bottom:2px; border-radius:2px; opacity:.9;}
+  .taxis .now{position:absolute; top:-2px; bottom:-2px; width:2.5px; background:var(--text);}
+  .trow .tflip{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); text-align:right;}
+  .trow .tflip.hot{color:var(--text); font-weight:500;}
+  .fliplist{margin-top:20px; font-size:15px; color:var(--muted); max-width:72ch;}
+  .fliplist li{margin:8px 0 8px 18px;}
+  .fliplist b{color:var(--text);}
+  .fliplist .fl-open{color:var(--open);} .fliplist .fl-closed{color:var(--closed);}
+
+  .artic label{display:block; font-family:"Space Grotesk",sans-serif; font-weight:500; font-size:17.5px; margin:24px 0 5px;}
+  .artic .hint{font-size:14.5px; color:var(--muted); margin-bottom:9px; max-width:70ch;}
+  textarea, input[type=text]{
+    width:100%; background:var(--panel); border:1px solid var(--line); border-radius:5px;
+    color:var(--text); font-family:inherit; font-size:16px; padding:11px 13px; resize:vertical;
+  }
+  textarea{min-height:104px;}
+  textarea::placeholder, input::placeholder{color:var(--faint);}
+  textarea:focus, input[type=text]:focus{border-color:var(--faint); outline:none;}
+
+  .controls{margin-top:46px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button{
+    font-family:"IBM Plex Mono",monospace; font-size:14px; letter-spacing:.04em;
+    background:var(--panel-2); color:var(--text); border:1px solid var(--line);
+    padding:10px 18px; border-radius:5px; cursor:pointer;
+  }
+  button:hover{border-color:var(--faint);}
+  button.primary{border-color:var(--open); color:var(--open);}
+  #statusMsg{font-size:12.5px; color:var(--muted); font-family:"IBM Plex Mono",monospace;}
+
+  .spectrum-legend{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-top:16px;
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted); text-align:center;
+  }
+  .spectrum-legend div{padding-top:7px; border-top:2px solid var(--line);}
+  .spectrum-legend div.active{color:var(--text); border-top-color:var(--text); font-weight:500;}
+
+  .has-tip{border-bottom:1px dotted var(--faint); cursor:help;}
+  .tip-cursor{cursor:help;}
+  .learn{margin-top:10px;}
+  .learn a{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--open); text-decoration:none; border-bottom:1px solid var(--open-dim); padding-bottom:1px;}
+  .learn a:hover{border-bottom-color:var(--open);}
+
+  .why-box{background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--text); border-radius:4px; padding:12px 18px; margin:14px 0 18px;}
+  .why-box p{margin:7px 0; font-size:15.5px; color:var(--muted);}
+  .why-box b{color:var(--text);}
+  .clusters{margin:4px 0 22px;}
+  .cl-row{display:grid; grid-template-columns:240px 1fr 92px; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line);}
+  .cl-name{font-size:15px;}
+  .cl-bars{display:flex; height:16px; border-radius:2px; overflow:hidden; background:var(--panel-2);}
+  .cl-half{width:50%; position:relative;}
+  .cl-half.l .cl-fill{position:absolute; right:0; top:2px; bottom:2px; background:var(--open); border-radius:2px 0 0 2px;}
+  .cl-half.r .cl-fill{position:absolute; left:0; top:2px; bottom:2px; background:var(--closed); border-radius:0 2px 2px 0;}
+  .cl-num{font-size:13px; text-align:right; color:var(--muted);}
+  .why-details{margin:10px 0; border:1px solid var(--line); border-radius:5px; background:var(--panel);}
+  .why-details summary{cursor:pointer; padding:11px 14px; font-size:15px; color:var(--text); font-family:"Space Grotesk",sans-serif;}
+  .why-details[open] summary{border-bottom:1px solid var(--line);}
+  .why-details > div{padding:8px 14px 14px;}
+  .at-row{display:grid; grid-template-columns:225px 1fr 150px; gap:12px; align-items:center; padding:7px 0; border-bottom:1px solid var(--line);}
+  .at-name{font-size:14.5px;}
+  .at-name .tt, .at-num .tt{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); display:block; font-weight:400;}
+  .at-axis{position:relative; height:14px; background:var(--panel-2); border-radius:2px;}
+  .at-axis .zero{position:absolute; left:50%; top:-3px; bottom:-3px; width:2px; background:var(--faint);}
+  .at-fill{position:absolute; top:2px; bottom:2px; border-radius:2px;}
+  .at-fill.open{background:var(--open);}
+  .at-fill.closed{background:var(--closed);}
+  .at-num{font-size:13.5px; text-align:right; color:var(--text); font-family:"IBM Plex Mono",monospace;}
+  .rt-row{padding:10px 0; border-bottom:1px solid var(--line); font-size:14.5px; color:var(--muted); line-height:1.65;}
+  .rt-row b{color:var(--text);}
+  .rt-o{color:var(--open);} .rt-c{color:var(--closed);}
+  @media (max-width:640px){ .cl-row, .at-row{grid-template-columns:1fr; gap:5px;} .cl-num, .at-num{text-align:left;} }
+
+  @media (max-width:640px){
+    .beam-note{display:none;}
+    .trow{grid-template-columns:1fr; gap:4px;}
+    .trow .tflip{text-align:left;}
+    .slider-row .end{display:none;}
+    header.masthead h1{font-size:28px;}
+    .pull-table .formula{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="beamBar" aria-label="Live balance of your weighted inputs">
+  <div class="beam-wrap">
+    <div class="beam-labels">
+      <span class="pole-open">&#9664; OPEN WEIGHTS</span>
+      <span class="band-name" id="bandName">—</span>
+      <span class="pole-closed">CLOSED / API &#9654;</span>
+    </div>
+    <div class="beam-track">
+      <div class="beam-half open-side" id="beamOpen"></div>
+      <div class="beam-half closed-side" id="beamClosed"></div>
+      <div class="beam-center"></div>
+      <div class="beam-needle" id="beamNeedle" style="left:50%"></div>
+    </div>
+    <div class="beam-caption">
+      <span class="beam-note">A mirror of your inputs — not a recommendation.</span>
+      <span class="totals"><span class="o" id="totOpen">open 0.00</span> &nbsp;·&nbsp; <span class="c" id="totClosed">closed 0.00</span></span>
+      <span class="beam-actions">
+        <button class="mini primary" id="btnSave" title="Save session">Save</button>
+        <button class="mini" id="btnExport" title="Copy summary as markdown">Copy summary</button>
+        <button class="mini" id="btnReset" title="Reset all sliders to 50 (notes kept)">Reset</button>
+        <span id="statusMsg"></span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<main>
+  <header class="masthead">
+    <div class="kicker">An elicitation instrument · 37 dials · one sitting or many · v2</div>
+    <h1>Weights &amp; Measures:<br>where do you stand on <span class="open-w">open</span> vs <span class="closed-w">closed</span>?</h1>
+    <p class="lede">
+      This instrument separates two things that usually get tangled: what you believe is <em>true</em>
+      (empirical credences, Part I) and what you <em>care about</em> (value weights, Part II).
+      Part III shows how the two couple into pulls toward each pole, which beliefs are load-bearing,
+      and what single change of mind would flip your lean. Part IV is where you write the stance in your own words.
+      The needle above follows you the whole way down.
+    </p>
+  </header>
+
+  <div class="notice">
+    <b>The decision space is not binary.</b> Between "closed everything" and "open everything" sit real,
+    defensible positions: structured researcher access, staged release, open-below-a-capability-threshold,
+    open-weights-but-closed-training-data. The beam lands you in a <em>neighborhood</em>, not on a verdict.
+    Also: your stance may legitimately differ by role — what you run personally, what you advocate publicly,
+    and what you build on are three different questions. Part IV treats them separately.
+    One more degree of freedom: weights are not the only control point. Compute and hardware are physical
+    and governable even when software distribution controls fail — so "open weights" and "ungoverned"
+    can be decoupled, which softens several tradeoffs below.
+  </div>
+
+  <!-- ============ PART I ============ -->
+  <section id="part1">
+    <div class="part-head"><span class="pn">PART I</span><h2>Empirical credences</h2></div>
+    <p class="part-sub">
+      For each claim, set your credence that it is true — 0 means almost certainly false, 100 almost certainly true.
+      These are questions about the world, not about what you want. Each card notes what would move the estimate,
+      because a credence you can't imagine updating isn't a credence.
+    </p>
+    <div id="beliefCards"></div>
+  </section>
+
+  <!-- ============ PART II ============ -->
+  <section id="part2">
+    <div class="part-head"><span class="pn">PART II</span><h2>Value weights</h2></div>
+    <p class="part-sub">
+      How much does each of these matter to you, independent of which pole serves it?
+      Resist the urge to set everything high — the instrument only becomes informative when weights differ.
+      A useful prompt: which of these would you trade away first if forced?
+    </p>
+    <div id="valueCards"></div>
+    <div class="card" id="riskCard">
+      <div class="tagline">
+        <span class="tag">R · RISK ATTITUDE — decision theory, not probability</span>
+        <span class="readnum" id="num_risk">1.00×</span>
+      </div>
+      <div class="stmt">How much should a catastrophe-class outcome count, relative to its probability-weighted average?</div>
+      <div class="elab">The instrument otherwise adds pulls linearly — risk-neutral expected value, which is itself a contested stance — so this dial makes that assumption yours to set. It multiplies every catastrophe-class pull on <em>both</em> sides equally (marked · R in the wiring): containment, recall, war-making containment, denial, dampened competition, and control custody toward closed; defense &amp; plural ecology, demilitarized structure, defusing the race, and anti-singleton plurality toward open. At 1× nothing changes. Above 1×, irreversible mass-casualty outcomes count for more than their expected value. Below 1×, you discount speculative tail arguments. Your probability estimates live in Part I — this dial is about your attitude toward a given probability.</div>
+      <div class="slider-row">
+        <span class="end">discount tails (0.33×)</span>
+        <input type="range" min="0" max="100" value="50" id="sl_risk" aria-label="Risk attitude dial">
+        <span class="end r">weight tails (3×)</span>
+      </div>
+      <div class="feeds"><span class="chip open">scales catastrophe-class open pulls</span><span class="chip closed">scales catastrophe-class closed pulls</span></div>
+    </div>
+  </section>
+
+  <!-- ============ PART III ============ -->
+  <section id="part3">
+    <div class="part-head"><span class="pn">PART III</span><h2>Readout: pulls, wiring, load-bearing beliefs</h2></div>
+
+    <h3 style="font-size:17px; margin:18px 0 6px;">Why did I land here?</h3>
+    <p class="wiring-note">Everything in this panel is computed directly from your sliders and the visible wiring — no AI involved, just the algebra read back to you. It updates live as you move anything.</p>
+    <div class="why-box" id="whyHeadline"></div>
+    <div id="clusterRows" class="clusters" aria-label="Cluster decomposition"></div>
+    <details class="why-details"><summary>Value-by-value attribution — what each value contributes, and the needle without it</summary><div id="attribRows"></div></details>
+    <details class="why-details"><summary>How your contested values routed — which beliefs sent them where</summary><div id="routeRows"></div></details>
+
+    <h3 style="font-size:16px; margin:34px 0 6px;">The wiring</h3>
+    <p class="wiring-note">
+      Each value exerts a pull toward one pole, <em>conditional on your beliefs</em>. Misuse-prevention pulls closed
+      only to the degree you believe open weights add marginal capability (B1), that closure actually withholds it
+      (low B2), and that closure buys more than a delay (low B7). The coupling formulas below are this instrument's
+      proposal, shown on purpose: if one feels wrong, that disagreement is itself a finding — note it in Part IV.
+      B and V symbols are your sliders, scaled 0–1. Four beliefs are deliberately two-sided — B14 (race defusal), B16 (surveillance vector),
+      B17 (footprint shift), and B19 (open usability) decide <em>which pole</em> a value pulls toward, not just how hard. And several values
+      are contested between the poles: misuse, demilitarization, race stability, human control, surveillance, and
+      footprint, and everyday access each appear on both sides of the table, with your beliefs adjudicating.
+      Pulls marked · R are catastrophe-class and scaled by the risk-attitude dial at the end of Part II — applied
+      to both sides equally, so it sharpens the contest rather than picking a winner.
+    </p>
+    <p class="wiring-note">One structural honesty note: the closed side’s biggest pulls are conjunctions — several uncertain beliefs multiplied together — while several open pulls serve their values directly. A consequence is that with every slider at 50, the beam already leans open: that starting lean reflects the wiring’s structure, not a measurement of you. If you think it bakes in a bias, that is a legitimate objection — log it under disagreements in Part IV.</p>
+    <table class="pull-table" aria-label="Pull contributions">
+      <thead><tr><th><span class="has-tip" title="Each row is one distinct consideration tugging the needle toward its pole. Hover a row name for what it means.">Pull</span></th><th><span class="has-tip" title="The formula computing this pull from your sliders (B = beliefs, V = values, each scaled 0–1).">Wiring</span></th><th class="pullbar-cell"><span class="has-tip" title="How hard this row tugs the needle: the wiring formula evaluated with your sliders. All bars share one scale, so compare lengths across rows; color shows which pole it pulls toward. Units are abstract — only relative size matters. The beam totals are each side’s sum.">Magnitude</span></th><th style="text-align:right">Val</th></tr></thead>
+      <tbody id="pullRows"></tbody>
+    </table>
+
+    <h3 style="font-size:16px; margin:34px 0 6px;">Sensitivity — which inputs are load-bearing?</h3>
+    <p class="wiring-note">
+      Each bar shows where the needle would travel if that one input swept from 0 to 100, everything else held fixed.
+      A bar that crosses the center line means that input, by itself, could flip your lean — whether any bar does depends on how far your current configuration sits from the balance point. When nothing crosses, your lean is robust to any single change of mind, and the longest bars still tell you which inputs the position leans on hardest — those are the ones worth researching before publishing anything.
+    </p>
+    <div class="tornado" id="tornadoRows"></div>
+    <ul class="fliplist" id="flipList"></ul>
+
+    <h3 style="font-size:16px; margin:34px 0 6px;">Neighborhoods on the spectrum</h3>
+    <p class="wiring-note">Where the needle sits maps loosely onto named positions. Treat the label as a starting point for articulation, not an answer.</p>
+    <div class="spectrum-legend" id="spectrumLegend">
+      <div data-band="0">FRONTIER<br>CUSTODY</div>
+      <div data-band="1">STRUCTURED<br>ACCESS</div>
+      <div data-band="2">THRESHOLD<br>CONDITIONALISM</div>
+      <div data-band="3">OPEN-WEIGHT<br>DEFAULT</div>
+      <div data-band="4">OPEN<br>INFRASTRUCTURE</div>
+    </div>
+  </section>
+
+  <!-- ============ PART IV ============ -->
+  <section id="part4" class="artic">
+    <div class="part-head"><span class="pn">PART IV</span><h2>Articulation</h2></div>
+    <p class="part-sub">
+      The instrument stops here; you take over. Write the stance in sentences. A position you can't state
+      with its strongest counterargument attached isn't ready to be advocated.
+    </p>
+
+    <label for="noteTripwire">The tripwire</label>
+    <p class="hint">Is your position conditional on capability? Name the threshold at which it would change — a benchmark, a demonstrated uplift, an incident class. "Open until X" is a stance; "open, and I'll know the limit when I see it" is not.</p>
+    <input type="text" id="noteTripwire" placeholder="e.g. open-weight default until a released model demonstrates meaningful biothreat uplift over the closed+gray-market baseline…">
+
+    <label for="notePersonal">Personal stack</label>
+    <p class="hint">What runs on your own hardware, what runs through APIs, and why? Where does the 18-month local-hardware bet change your plans?</p>
+    <textarea id="notePersonal"></textarea>
+
+    <label for="noteAuthor">Public advocacy</label>
+    <p class="hint">What do you argue for in public, in one paragraph? Include the strongest objection you will steelman in the same breath — the readers you most want to reach will supply it anyway.</p>
+    <textarea id="noteAuthor"></textarea>
+
+    <label for="noteTara">What you build</label>
+    <p class="hint">If you build products, games, or platforms on AI: what powers them, and is that choice legible to your users? Infrastructure is part of the statement.</p>
+    <textarea id="noteTara"></textarea>
+
+    <label for="noteWiring">Disagreements with the wiring</label>
+    <p class="hint">Where do the coupling formulas in Part III misrepresent how you think the world works? These notes are the seed of the version of this instrument you'd build yourself.</p>
+    <textarea id="noteWiring"></textarea>
+
+  </section>
+</main>
+
+<script>
+/* ============================================================
+   DATA
+============================================================ */
+const BELIEFS = [
+  {id:'b1', tag:'B1', name:'MARGINAL UPLIFT', stmt:'Open-weight release of frontier-class models gives determined bad actors capabilities they could not otherwise obtain.',
+   elab:'This is the \u201cmarginal risk\u201d question that runs through the whole debate. The right comparison is not \u201copen model vs. no model\u201d but \u201copen model vs. everything a motivated attacker can already reach\u201d: jailbroken commercial APIs, gray-market resellers, models that are already public, and non-AI routes to the same harm. If open release adds little on top of that baseline, closure buys little safety.',
+   probe:'Uplift studies with realistic threat actors; incident data following major open releases; where the true bottleneck sits (knowledge vs. materials vs. tacit skill).',
+   link:'https://www.google.com/search?q=marginal+risk+open+weight+AI+models&udm=50',
+   feeds:[{side:'closed', label:'containment'}]},
+  {id:'b2', tag:'B2', name:'LEAKAGE', stmt:'Closed models already leak their capability: distillation and gray-market API resale transfer most of what closure is supposed to withhold.',
+   elab:'Gray-market resellers rent out closed-model access with no identity checks, and \u201cdistillation\u201d \u2014 training a new model on a closed model\u2019s outputs \u2014 copies much of its capability into weights anyone can download. If most of what closure withholds escapes anyway, closure is a tollbooth rather than a wall: it inconveniences honest users while determined actors route around it.',
+   probe:'Benchmark gaps between frontier models and their distillates; how quickly distillates appear after each frontier release.',
+   link:'https://www.google.com/search?q=LLM+distillation+gray+market+API+resellers&udm=50',
+   feeds:[{side:'closed', label:'weakens containment & provenance', neg:true}]},
+  {id:'b3', tag:'B3', name:'STRIPPING', stmt:'Safety training is cosmetic once weights are public: fine-tuning removes refusal behavior cheaply and reliably.',
+   elab:'Refusal behavior (\u201cI can\u2019t help with that\u201d) is added in a final training stage, and researchers have repeatedly shown it can be stripped from open weights with a small amount of cheap fine-tuning. This is close to empirically settled \u2014 but note it only matters in proportion to B1: stripped guardrails on a model with no marginal capability strip nothing that counts.',
+   probe:'Is tamper-resistant fine-tuning research making real progress, or is every published defense broken within weeks?',
+   link:'https://www.google.com/search?q=fine-tuning+removes+safety+guardrails+open+weight+models&udm=50',
+   feeds:[{side:'closed', label:'amplifies containment'}]},
+  {id:'b4', tag:'B4', name:'DEFENSE ADVANTAGE', stmt:'Broad access to weights strengthens defenders \u2014 red-teamers, biosecurity screeners, cyber-defense, safety researchers \u2014 at least as much as attackers.',
+   elab:'\u201cOffense\u2013defense balance\u201d asks whether a technology helps attackers or defenders more. Open weights let companies red-team their own systems, biosecurity groups build screening tools, and safety researchers study failure modes directly. But the balance is domain-specific: it may favor defense in cybersecurity while failing in biology, where the bottleneck is physical synthesis rather than knowledge.',
+   probe:'Per-domain evidence: do defensive tools built on open weights measurably outpace the misuse they enable?',
+   link:'https://www.google.com/search?q=offense+defense+balance+open+source+AI&udm=50',
+   feeds:[{side:'open', label:'defense ecology'}]},
+  {id:'b5', tag:'B5', name:'DISTRIBUTED ECOLOGY', stmt:'A decentralized ecology of many diverse AIs is structurally safer than a few centrally controlled systems.',
+   elab:'The decentralist argument: a world of many different AIs, run by many different actors, has no single point of failure, no single chokepoint to capture, and no one system whose values get locked in for everyone. The counterargument distinguishes two kinds of safety \u2014 decentralization plausibly protects against tyranny while making accidents and misuse harder to contain.',
+   probe:'Look for concrete mechanisms, not vibes: how exactly would plural AIs check each other in practice? Immune-system analogies are suggestive but unproven.',
+   link:'https://www.google.com/search?q=decentralized+AI+inherently+safer+argument&udm=50',
+   feeds:[{side:'open', label:'plural robustness'}]},
+  {id:'b6', tag:'B6', name:'RECALL & VISIBILITY', stmt:'In an emergency, the ability to monitor usage, shut down, patch, or restrict a deployed model would meaningfully reduce harm.',
+   elab:'Two things bundle here. Reversibility: a closed model can be patched, restricted, or switched off, while released weights are copied everywhere within days and can never be recalled \u2014 the one genuinely asymmetric fact in this debate. Visibility: closed APIs let providers watch for emerging misuse patterns and respond early; open deployment happens in the dark.',
+   probe:'Have software recalls ever mattered at civilizational stakes? Would a crisis unfold slowly enough for shutdown to help, and would the actors in control actually pull the lever?',
+   link:'https://www.google.com/search?q=AI+model+weight+release+irreversibility+misuse+monitoring&udm=50',
+   feeds:[{side:'closed', label:'reversibility & visibility'}]},
+  {id:'b7', tag:'B7', name:'LOCAL INEVITABILITY', stmt:'Today\u2019s frontier capability will run on affordable local hardware within a year or two, whatever anyone\u2019s release policy.',
+   elab:'This is roughly the measured trend, not a speculative bet. Researchers tracking the gap find that a single top-end gaming GPU (under $2,500) can run open models matching the frontier of six to twelve months earlier, and that the compute needed to reach a fixed capability level has halved roughly every eight to nine months for over a decade. One caveat: small open models are often tuned to the benchmarks, so real-world lag runs somewhat longer. If the pattern holds, closure delays access rather than preventing it \u2014 though a delay during a critical window may still be worth buying.',
+   probe:'Watch whether the frontier-to-consumer-GPU lag stretches or shrinks with each generation \u2014 and whether yesterday\u2019s frontier becoming cheap implies tomorrow\u2019s will too.',
+   link:'https://www.google.com/search?q=frontier+AI+capability+consumer+GPU+lag+Epoch&udm=50',
+   feeds:[{side:'closed', label:'discounts containment, recall & denial', neg:true},{side:'open', label:'boosts privacy & equity'}]},
+  {id:'b8', tag:'B8', name:'GAP PERSISTENCE', stmt:'Closed frontier models will remain significantly ahead of the best open models for the foreseeable future.',
+   elab:'The open\u2013closed capability gap has both narrowed and re-widened over the past few years. If closed labs keep a durable lead, choosing open means accepting weaker tools. If the gap keeps collapsing, both the capability cost of going open and the containment benefit of staying closed shrink together.',
+   probe:'What do training-compute economics and the funding models behind open labs actually predict, generation over generation?',
+   link:'https://www.google.com/search?q=open+vs+closed+AI+model+capability+gap+trend&udm=50',
+   feeds:[{side:'closed', label:'frontier access'}]},
+  {id:'b9', tag:'B9', name:'CONCENTRATION', stmt:'A closed-dominant regime durably concentrates economic and political power in a handful of labs and allied states.',
+   elab:'Frontier training costs hundreds of millions of dollars, which naturally concentrates capability in a few companies. If those companies also control all access, they collect the economic rents, set the terms of use for everyone, and grow entangled with the states that host them \u2014 a concentration that may be very hard to unwind later.',
+   probe:'Could concentration happen anyway through compute and data monopolies, even with open weights? If so, openness buys less here than it appears.',
+   link:'https://www.google.com/search?q=AI+concentration+of+power+foundation+models&udm=50',
+   feeds:[{side:'open', label:'countervailing power'}]},
+  {id:'b10', tag:'B10', name:'GOVERNANCE EFFICACY', stmt:'Democratic oversight of closed labs can actually work \u2014 audits, liability, licensing \u2014 rather than dissolving into regulatory capture.',
+   elab:'Closure is only compatible with accountability if someone can genuinely hold the labs to account. If audits, liability, and licensing work the way they do in aviation, then closed-plus-regulated is a coherent position. If oversight decays into regulatory capture \u2014 the industry writing its own rules \u2014 then closure just means unaccountable private power.',
+   probe:'Track records in pharma, aviation, and finance point in different directions. Which precedent does frontier AI most resemble, and why?',
+   link:'https://www.google.com/search?q=frontier+AI+regulation+audits+regulatory+capture&udm=50',
+   feeds:[{side:'open', label:'discounts commons & power pulls', neg:true}]},
+  {id:'b11', tag:'B11', name:'MILITARY UPLIFT', stmt:'Open weights meaningfully increase the war-making capability of states and non-state actors beyond what they would field anyway.',
+   elab:'Major militaries can buy, build, or steal capability whatever the release policy. So the marginal question mostly concerns smaller states, militias, insurgents, and cartels: does a downloadable frontier model meaningfully upgrade their targeting, drones, logistics, or cyber operations beyond what they could already field?',
+   probe:'Which military applications are actually model-bottlenecked, versus bottlenecked by sensors, platforms, and integration? Drone autonomy in recent conflicts is the live case study.',
+   link:'https://www.google.com/search?q=open+source+AI+military+use+non-state+actors&udm=50',
+   feeds:[{side:'closed', label:'war-making containment'}]},
+  {id:'b12', tag:'B12', name:'LAB\u2013STATE FUSION', stmt:'Under a closed regime, frontier labs fuse with national-security establishments \u2014 defense contracts, classification, revolving doors \u2014 regardless of founding ideals.',
+   elab:'When capability is concentrated in a few labs, national-security establishments come to them: defense contracts, classified projects, security clearances, revolving-door hiring. Part of the case for openness is making that embrace less total; part of the case against is that fusion happens either way, and openness just adds proliferation on top.',
+   probe:'Watch the contract record: which labs sign what, under what conditions, and whether any lab declines and remains frontier.',
+   link:'https://www.google.com/search?q=AI+labs+defense+contracts+national+security+entanglement&udm=50',
+   feeds:[{side:'open', label:'demilitarized structure'}]},
+  {id:'b13', tag:'B13', name:'DENIAL WORKS', stmt:'Withholding weights meaningfully slows rival states\u2019 progress toward frontier capability.',
+   elab:'This is the export-control theory of victory applied to software: keep the weights home and rivals stay behind. The standing counterevidence is that well-resourced states have repeatedly closed the gap through their own training runs, and espionage is a permanent leak path. If denial does not actually slow rivals, its costs are paid for nothing.',
+   probe:'Measure the lag between frontier releases and rival replications over successive generations \u2014 is it growing or shrinking?',
+   link:'https://www.google.com/search?q=AI+export+controls+effectiveness+rival+states&udm=50',
+   feeds:[{side:'closed', label:'denial of rivals'}]},
+  {id:'b14', tag:'B14', name:'RACE DEFUSAL', stmt:'Diffusing capability defuses dangerous race dynamics rather than intensifying them.',
+   elab:'Deliberately two-sided, because the race argument has two channels with opposite signs. The stakes channel: if capability spreads to everyone, there is no winner-take-all prize, so the desperation logic \u2014 lose the race and lose everything \u2014 weakens. The intensity channel: an open ecosystem adds a competitor that charges nothing, thinning margins and compressing release cycles, and commercial shipping pressure is exactly what drives safety corner-cutting inside labs. High credence says the stakes channel dominates; low credence says the intensity channel does.',
+   probe:'Natural experiments cut both ways: did labs accelerate releases and trim safety work after major open-model shocks, or has diffusion visibly lowered the temperature between states?',
+   link:'https://www.google.com/search?q=open+source+AI+competition+race+dynamics+safety&udm=50',
+   feeds:[{side:'open', label:'defusing the race'},{side:'closed', label:'dampened competition', neg:true}]},
+  {id:'b15', tag:'B15', name:'RSI HORIZON', stmt:'Recursive self-improvement or autonomous replication becomes a live risk within the policy-relevant horizon (roughly a decade).',
+   elab:'Recursive self-improvement is the scenario where AI systems accelerate their own development, potentially escaping human oversight; autonomous replication is the nearer-term version, where agentic systems copy and sustain themselves without permission. If either is plausible soon, weights are the substrate of a potentially uncontrollable process and irreversibility dominates everything else. If not, the scenario should not drive today\u2019s release policy.',
+   probe:'Autonomous AI-R&D evaluations, agentic persistence benchmarks, and whether self-improvement shows compounding returns or quick plateaus.',
+   link:'https://www.google.com/search?q=recursive+self+improvement+autonomous+replication+AI+risk&udm=50',
+   feeds:[{side:'closed', label:'control custody'}]},
+  {id:'b16', tag:'B16', name:'SURVEILLANCE VECTOR', stmt:'The dominant surveillance threat runs through centralized platforms and state access to them \u2014 not through proliferated open tooling.',
+   elab:'Deliberately two-sided. High credence points the surveillance value toward open and local: your prompts never leave your machine, and there is no central log to subpoena or breach. Low credence points it closed: open weights hand every police department, employer, and authoritarian regime cheap tooling to analyze whole populations, with no provider in a position to say no.',
+   probe:'Compare realized harms: subpoenaed chat logs and platform dragnets versus documented abuses built on open models.',
+   link:'https://www.google.com/search?q=AI+surveillance+centralized+platforms+vs+open+models&udm=50',
+   feeds:[{side:'open', label:'surveillance resistance'},{side:'closed', label:'surveillance proliferation', neg:true}]},
+  {id:'b17', tag:'B17', name:'FOOTPRINT SHIFT', stmt:'A more open, decentralized AI ecosystem reduces total ecological and community footprint rather than multiplying it.',
+   elab:'Two-sided. Open ecosystems drive small-model efficiency and reuse, but hyperscale training continues regardless, and a billion local GPUs are not obviously greener than optimized datacenters. Beware the Jevons paradox here: the well-documented pattern where making a resource cheaper to use causes total consumption to rise rather than fall \u2014 more efficient models could simply mean vastly more AI running everywhere.',
+   probe:'Joules per token, local versus hyperscale, over time; whether open-model demand displaces datacenter buildout or merely adds to it.',
+   link:'https://www.google.com/search?q=AI+energy+use+Jevons+paradox+data+centers&udm=50',
+   feeds:[{side:'open', label:'distributed footprint'},{side:'closed', label:'concentrated efficiency', neg:true}]},
+  {id:'b18', tag:'B18', name:'PROVENANCE CONTROLS', stmt:'Provider-side controls \u2014 watermarking, usage monitoring, refusal policies \u2014 meaningfully curb synthetic-media abuse and industrialized influence operations.',
+   elab:'The case for closure here is that a provider can watermark outputs, monitor accounts, and refuse abusive use at scale \u2014 none of which exists once weights are public. But closure only helps the information ecosystem if those controls actually work: watermarks that strip under paraphrase, and moderation that lags the attackers, deliver the costs of closure without the benefit.',
+   probe:'Watermark robustness under re-encoding and paraphrase; whether provenance standards like C2PA reach adoption where it counts.',
+   link:'https://www.google.com/search?q=AI+watermarking+robustness+C2PA+content+provenance&udm=50',
+   feeds:[{side:'closed', label:'provenance & monitoring'}]},
+  {id:'b19', tag:'B19', name:'OPEN USABILITY', stmt:'Open ecosystems deliver usable, affordable AI to ordinary, non-technical people \u2014 through apps and hosted services built on open weights \u2014 rather than easy AI remaining the strength of polished closed products.',
+   elab:'Deliberately two-sided. Today the easiest path to capable AI is a polished closed product: install nothing, pay little or nothing, ask a question \u2014 while running open weights takes hardware, setup, and skill. High credence says openness reaches everyone anyway, through price competition and simple apps wrapping open models. Low credence says polish and integration will keep favoring closed products, and openness mainly serves people who already have technical skills.',
+   probe:'Track what non-technical people actually use: do apps and services built on open models win meaningful share on price and quality, or does polish keep everyone on closed products?',
+   link:'https://www.google.com/search?q=open+source+AI+apps+usability+non+technical+users&udm=50',
+   feeds:[{side:'open', label:'accessible abundance'},{side:'closed', label:'polished products', neg:true}]},
+];
+
+const VALUES = [
+  {id:'v1', tag:'V1', name:'CATASTROPHIC MISUSE', stmt:'Preventing mass-casualty misuse: engineered pathogens, critical-infrastructure cyberattack, autonomous weapons.',
+   elab:'Weigh two things at once: how bad these outcomes would be, and how much AI release decisions bear on them at all.',
+   link:'https://www.google.com/search?q=AI+catastrophic+misuse+biosecurity+cyberattack&udm=50',
+   feeds:[{side:'closed', label:'containment'},{side:'open', label:'defense ecology'}]},
+  {id:'v2', tag:'V2', name:'POWER CONCENTRATION', stmt:'Preventing durable concentration of economic and political power in a few labs and states.',
+   elab:'The scenario to weigh: a handful of companies and their host governments deciding what the most powerful cognitive tools will and will not do \u2014 for everyone.',
+   link:'https://www.google.com/search?q=concentration+of+power+AI+companies+governance&udm=50',
+   feeds:[{side:'open', label:'countervailing power'}]},
+  {id:'v3', tag:'V3', name:'AUTONOMY', stmt:'Owning and shaping your own tools: fine-tuning, steering, training a model that behaves the way you choose.',
+   elab:'The difference between owning a tool and renting a service whose behavior someone else decides and can change at any time.',
+   link:'https://www.google.com/search?q=fine+tuning+running+your+own+local+AI+model&udm=50',
+   feeds:[{side:'open', label:'autonomy'}]},
+  {id:'v4', tag:'V4', name:'PRIVACY', stmt:'Data sovereignty: inference that never leaves hardware you control.',
+   elab:'When the model runs locally, your medical questions, drafts, and business data never leave the building \u2014 and there is nothing for anyone to log.',
+   link:'https://www.google.com/search?q=local+LLM+privacy+data+sovereignty&udm=50',
+   feeds:[{side:'open', label:'privacy'}]},
+  {id:'v5', tag:'V5', name:'CONTINUITY', stmt:'Censorship resistance and continuity: no company or government can switch your stack off or quietly change it under you.',
+   elab:'Models get deprecated, terms change, accounts get banned, governments lean on providers. Weights on your own disk cannot be switched off or silently altered.',
+   link:'https://www.google.com/search?q=AI+model+deprecation+platform+dependence+censorship&udm=50',
+   feeds:[{side:'open', label:'continuity'}]},
+  {id:'v6', tag:'V6', name:'EPISTEMIC COMMONS', stmt:'Open science: interpretability, auditability, reproducible research on real weights.',
+   elab:'Understanding how these systems work \u2014 and independently checking claims about them \u2014 requires access to real weights, not API keys.',
+   link:'https://www.google.com/search?q=open+model+weights+interpretability+research+auditability&udm=50',
+   feeds:[{side:'open', label:'commons'}]},
+  {id:'v7', tag:'V7', name:'GLOBAL EQUITY', stmt:'Capability available to people and places the API economy ignores or prices out.',
+   elab:'Includes linguistic and cultural sovereignty \u2014 communities adapting models to under-resourced languages \u2014 and avoiding structural dependency of poorer regions on infrastructure they will never own.',
+   link:'https://www.google.com/search?q=open+source+AI+global+south+language+equity&udm=50',
+   feeds:[{side:'open', label:'equity'}]},
+  {id:'v8', tag:'V8', name:'REVERSIBILITY', stmt:'Option value: preserving humanity\u2019s ability to pull back if something goes badly wrong.',
+   elab:'Insurance against being wrong: if AI development takes a dangerous turn, how much is it worth to still have levers to pull? Released weights are the lever you no longer have.',
+   link:'https://www.google.com/search?q=irreversibility+AI+model+release+option+value&udm=50',
+   feeds:[{side:'closed', label:'reversibility & visibility'}]},
+  {id:'v9', tag:'V9', name:'FRONTIER ACCESS', stmt:'Working with the most capable models available, for your own work.',
+   elab:'If the best models stay closed (B8), committing to open tooling means accepting a capability tax on everything you do.',
+   link:'https://www.google.com/search?q=frontier+AI+model+capability+comparison&udm=50',
+   feeds:[{side:'closed', label:'frontier access'}]},
+  {id:'v10', tag:'V10', name:'DEMILITARIZATION', stmt:'Limiting AI\u2019s integration into war-making: autonomous weapons, targeting systems, and the entanglement of labs with defense establishments.',
+   elab:'Pulls both ways: closed can contain proliferation to militias and rogue states (B11), while openness resists lab\u2013state fusion (B12).',
+   link:'https://www.google.com/search?q=autonomous+weapons+AI+militarization&udm=50',
+   feeds:[{side:'closed', label:'war-making containment'},{side:'open', label:'demilitarized structure'}]},
+  {id:'v11', tag:'V11', name:'RACE STABILITY', stmt:'Avoiding a destabilizing AGI arms race between states \u2014 the dynamic where speed beats safety.',
+   elab:'Pulls closed if denial works (B13) or if open competition intensifies the commercial scramble (low B14); pulls open if diffusion shrinks the winner-take-all prize (high B14).',
+   link:'https://www.google.com/search?q=AGI+arms+race+between+states+stability&udm=50',
+   feeds:[{side:'closed', label:'denial of rivals'},{side:'open', label:'defusing the race'}]},
+  {id:'v12', tag:'V12', name:'HUMAN CONTROL', stmt:'Preventing loss of human control over increasingly agentic, self-improving systems \u2014 distinct from human misuse.',
+   elab:'Pulls closed via custody and recall if self-improving AI is near (B15, B6); pulls open via the anti-singleton argument if plural ecologies resist takeover (B5).',
+   link:'https://www.google.com/search?q=AI+loss+of+control+risk&udm=50',
+   feeds:[{side:'closed', label:'control custody'},{side:'open', label:'anti-singleton plurality'}]},
+  {id:'v13', tag:'V13', name:'SURVEILLANCE RESISTANCE', stmt:'A world without pervasive AI-powered surveillance \u2014 by platforms, states, or employers.',
+   elab:'Whether by platforms mining your conversations or states running pattern recognition at population scale \u2014 weigh how much a surveillance-resistant world matters to you.',
+   link:'https://www.google.com/search?q=AI+mass+surveillance+resistance&udm=50',
+   feeds:[{side:'open', label:'surveillance resistance'},{side:'closed', label:'surveillance proliferation'}]},
+  {id:'v14', tag:'V14', name:'FOOTPRINT', stmt:'The physical bill: energy, water, land, and the communities steamrolled by datacenter siting, tax deals, and grid strain.',
+   elab:'Datacenters draw gigawatts and millions of gallons of water, and they land in specific towns \u2014 often via quiet tax deals and rezoning fights those towns did not choose.',
+   link:'https://www.google.com/search?q=data+center+community+impact+water+energy&udm=50',
+   feeds:[{side:'open', label:'distributed footprint'},{side:'closed', label:'concentrated efficiency'}]},
+  {id:'v15', tag:'V15', name:'INFOSPHERE INTEGRITY', stmt:'A trustworthy information ecosystem: limiting industrialized deception, deepfakes, and influence operations.',
+   elab:'When anyone can generate convincing text, voices, and video at industrial scale, shared reality itself is the target.',
+   link:'https://www.google.com/search?q=deepfakes+influence+operations+information+ecosystem&udm=50',
+   feeds:[{side:'closed', label:'provenance & monitoring'}]},
+  {id:'v16', tag:'V16', name:'ACCOUNTABILITY', stmt:'Clear lines of responsibility \u2014 an identifiable, liable party when AI systems cause harm.',
+   elab:'Open ecosystems diffuse liability across forks and jurisdictions; closure concentrates it \u2014 but into something real only to the degree oversight works (B10).',
+   link:'https://www.google.com/search?q=AI+liability+accountability+open+source+models&udm=50',
+   feeds:[{side:'closed', label:'accountability'}]},
+  {id:'v17', tag:'V17', name:'EVERYDAY ACCESS', stmt:'Capable AI that ordinary people can actually use: no hardware, no setup, no expertise \u2014 at a price everyone can afford.',
+   elab:'Distinct from global equity (V7): this is about ease and cost for non-experts everywhere, not only under-served regions. Weigh how much it matters that AI works for people who will never open a terminal.',
+   link:'https://www.google.com/search?q=AI+accessibility+ease+of+use+cost+consumers&udm=50',
+   feeds:[{side:'open', label:'accessible abundance'},{side:'closed', label:'polished products'}]},
+];
+
+const BANDS = ['Frontier custody','Structured access','Threshold conditionalism','Open-weight default','Open infrastructure'];
+
+/* ============================================================
+   STATE
+============================================================ */
+const state = {};
+BELIEFS.forEach(b=>state[b.id]=50);
+VALUES.forEach(v=>state[v.id]=50);
+state.risk = 50;
+const NOTE_IDS = ['noteTripwire','notePersonal','noteAuthor','noteTara','noteWiring'];
+const STORAGE_KEY = 'open_closed_stance_v1';
+
+/* ============================================================
+   MODEL — the wiring, deliberately visible
+============================================================ */
+function riskMult(x){ return Math.pow(3, (x-50)/50); }
+
+function computePulls(s){
+  const g = id => s[id]/100;
+  const rm = riskMult(s.risk === undefined ? 50 : s.risk);
+  const b1=g('b1'), b2=g('b2'), b3=g('b3'), b4=g('b4'), b5=g('b5'),
+        b6=g('b6'), b7=g('b7'), b8=g('b8'), b9=g('b9'), b10=g('b10'),
+        b11=g('b11'), b12=g('b12'), b13=g('b13'), b14=g('b14'), b15=g('b15'),
+        b16=g('b16'), b17=g('b17'), b18=g('b18'), b19=g('b19');
+  const v1=g('v1'), v2=g('v2'), v3=g('v3'), v4=g('v4'), v5=g('v5'),
+        v6=g('v6'), v7=g('v7'), v8=g('v8'), v9=g('v9'),
+        v10=g('v10'), v11=g('v11'), v12=g('v12'), v13=g('v13'),
+        v14=g('v14'), v15=g('v15'), v16=g('v16'), v17=g('v17');
+
+  const closed = [
+    {name:'Containment of misuse', v:'v1', cat:true, desc:'The case that keeping weights private denies mass-casualty capability to attackers. Strong only if open weights add real capability (B1), closure actually withholds it (low B2), and buys more than a delay (low B7).', formula:'V1 \u00b7 B1 \u00b7 (0.4+0.6\u00b7B3) \u00b7 (1\u22120.7\u00b7B2) \u00b7 (1\u22120.5\u00b7B7) \u00b7 R',
+     value: v1 * b1 * (0.4+0.6*b3) * (1-0.7*b2) * (1-0.5*b7) * rm},
+    {name:'Recall & monitoring', v:'v8', cat:true, desc:'The value of being able to watch for misuse, patch, restrict, or shut down a deployed model in an emergency \u2014 an option that exists only while weights stay private.', formula:'V8 \u00b7 B6 \u00b7 (1\u22120.6\u00b7B7) \u00b7 R',
+     value: v8 * b6 * (1-0.6*b7) * rm},
+    {name:'Frontier capability', v:'v9', desc:'If closed labs keep the best models (B8), staying in the closed ecosystem gets you more capable tools for your own work.', formula:'V9 \u00b7 B8 \u00b7 0.8',
+     value: v9 * b8 * 0.8},
+    {name:'War-making containment', v:'v10', cat:true, desc:'The case that closure keeps serious military capability out of the hands of militias, cartels, and smaller states.', formula:'V10 \u00b7 B11 \u00b7 (1\u22120.5\u00b7B7) \u00b7 (1\u22120.4\u00b7B2) \u00b7 R',
+     value: v10 * b11 * (1-0.5*b7) * (1-0.4*b2) * rm},
+    {name:'Denial of rivals', v:'v11', cat:true, desc:'The case that withholding weights slows rival states and preserves a stabilizing lead.', formula:'V11 \u00b7 B13 \u00b7 (1\u22120.5\u00b7B7) \u00b7 R',
+     value: v11 * b13 * (1-0.5*b7) * rm},
+    {name:'Dampened competition', v:'v11', cat:true, desc:'The case that open competition intensifies the commercial scramble \u2014 a free alternative thins margins and compresses release cycles, cutting safety slack at labs. Active to the degree you doubt B14.', formula:'V11 \u00b7 (1\u2212B14) \u00b7 0.6 \u00b7 R',
+     value: v11 * (1-b14) * 0.6 * rm},
+    {name:'Control custody', v:'v12', cat:true, desc:'If self-improving or self-replicating AI is plausible soon (B15), keeping weights under lock preserves the ability to contain it.', formula:'V12 \u00b7 B15 \u00b7 (0.3+0.7\u00b7B6) \u00b7 R',
+     value: v12 * b15 * (0.3+0.7*b6) * rm},
+    {name:'Surveillance proliferation', v:'v13', desc:'The worry that open weights hand cheap surveillance tooling to every regime, precinct, and employer. Active to the degree you doubt B16.', formula:'V13 \u00b7 (1\u2212B16) \u00b7 0.5',
+     value: v13 * (1-b16) * 0.5},
+    {name:'Concentrated efficiency', v:'v14', desc:'The case that optimized hyperscale datacenters waste less energy and water than millions of local GPUs. Active to the degree you doubt B17.', formula:'V14 \u00b7 (1\u2212B17) \u00b7 0.5',
+     value: v14 * (1-b17) * 0.5},
+    {name:'Provenance & monitoring', v:'v15', desc:'The case that only a closed provider can watermark outputs, monitor accounts, and refuse abuse at scale, protecting the information ecosystem.', formula:'V15 \u00b7 B18 \u00b7 (1\u22120.4\u00b7B2)',
+     value: v15 * b18 * (1-0.4*b2)},
+    {name:'Accountability', v:'v16', desc:'A closed provider is an identifiable, liable party when things go wrong \u2014 worth something only to the degree oversight works (B10).', formula:'V16 \u00b7 (0.3+0.7\u00b7B10)',
+     value: v16 * (0.3+0.7*b10)},
+    {name:'Polished products', v:'v17', desc:'The case that non-technical people are best served by integrated closed products: zero setup, free tiers, support. Active to the degree you doubt B19.', formula:'V17 \u00b7 (1\u2212B19) \u00b7 0.6',
+     value: v17 * (1-b19) * 0.6},
+  ];
+  const open = [
+    {name:'Defense & plural ecology', v:'v1', cat:true, desc:'The case that broad access strengthens defenders more than attackers, and that many diverse AIs check each other better than a few centralized ones.', formula:'V1 \u00b7 (0.35\u00b7B4 + 0.35\u00b7B5) \u00b7 R',
+     value: v1 * (0.35*b4 + 0.35*b5) * rm},
+    {name:'Countervailing power', v:'v2', desc:'Open weights as the counterweight to a world where a few labs and their host states control all serious AI.', formula:'V2 \u00b7 B9 \u00b7 (1\u22120.5\u00b7B10)',
+     value: v2 * b9 * (1-0.5*b10)},
+    {name:'Autonomy', v:'v3', desc:'Owning and shaping your own tools rather than renting behavior that someone else decides.', formula:'V3 \u00b7 0.9',
+     value: v3 * 0.9},
+    {name:'Privacy', v:'v4', desc:'Local inference means your data never leaves hardware you control. Grows stronger as local models become more capable (B7).', formula:'V4 \u00b7 (0.4+0.6\u00b7B7)',
+     value: v4 * (0.4+0.6*b7)},
+    {name:'Continuity', v:'v5', desc:'Nobody can deprecate, ban, censor, or quietly alter a model sitting on your own disk.', formula:'V5 \u00b7 0.9',
+     value: v5 * 0.9},
+    {name:'Epistemic commons', v:'v6', desc:'Open weights as scientific infrastructure: interpretability, independent audits, reproducible research.', formula:'V6 \u00b7 (1\u22120.4\u00b7B10)',
+     value: v6 * (1-0.4*b10)},
+    {name:'Global equity', v:'v7', desc:'Capability for people and places the API economy prices out, including under-resourced languages.', formula:'V7 \u00b7 (0.5+0.5\u00b7B7)',
+     value: v7 * (0.5+0.5*b7)},
+    {name:'Demilitarized structure', v:'v10', cat:true, desc:'If concentrated labs inevitably fuse with defense establishments (B12), openness dilutes that embrace.', formula:'V10 \u00b7 B12 \u00b7 0.8 \u00b7 R',
+     value: v10 * b12 * 0.8 * rm},
+    {name:'Defusing the race', v:'v11', cat:true, desc:'If diffusion shrinks the winner-take-all prize (high B14), openness lowers the desperation that drives corner-cutting.', formula:'V11 \u00b7 B14 \u00b7 0.6 \u00b7 R',
+     value: v11 * b14 * 0.6 * rm},
+    {name:'Anti-singleton plurality', v:'v12', cat:true, desc:'The case that a plural ecology of AIs is the best protection against any single system seizing control.', formula:'V12 \u00b7 B5 \u00b7 0.5 \u00b7 R',
+     value: v12 * b5 * 0.5 * rm},
+    {name:'Surveillance resistance', v:'v13', desc:'Local, private inference with no central log to subpoena or breach. Active to the degree you believe B16.', formula:'V13 \u00b7 B16 \u00b7 0.9',
+     value: v13 * b16 * 0.9},
+    {name:'Distributed footprint', v:'v14', desc:'The case that an open ecosystem of small, efficient models shrinks the physical footprint. Active to the degree you believe B17.', formula:'V14 \u00b7 B17 \u00b7 0.8',
+     value: v14 * b17 * 0.8},
+    {name:'Accessible abundance', v:'v17', desc:'The case that open weights drive prices toward zero and let anyone build simple apps on top, reaching ordinary people through competition. Active to the degree you believe B19.', formula:'V17 \u00b7 B19 \u00b7 0.6',
+     value: v17 * b19 * 0.6},
+  ];
+  const O = open.reduce((a,p)=>a+p.value,0);
+  const C = closed.reduce((a,p)=>a+p.value,0);
+  const net = (O - C) / Math.max(O + C, 0.0001); // -1..1, + = open
+  return {open, closed, O, C, net};
+}
+
+function bandIndex(net){
+  if(net < -0.5) return 0;
+  if(net < -0.15) return 1;
+  if(net <= 0.15) return 2;
+  if(net <= 0.5) return 3;
+  return 4;
+}
+
+/* ============================================================
+   RENDER — cards
+============================================================ */
+function chipHtml(f){
+  return `<span class="chip ${f.side}">${f.neg?'&#8722; ':'&#8594; '}${f.side}: ${f.label}</span>`;
+}
+
+function buildCard(item, kind){
+  const isBelief = kind==='belief';
+  const endL = isBelief ? 'almost certainly false' : 'barely matters';
+  const endR = isBelief ? 'almost certainly true' : 'matters enormously';
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.innerHTML = `
+    <div class="tagline">
+      <span class="tag">${item.tag} · ${item.name}</span>
+      <span class="readnum" id="num_${item.id}">50%</span>
+    </div>
+    <div class="stmt">${item.stmt}</div>
+    ${item.elab ? `<div class="elab">${item.elab}</div>` : ''}
+    ${item.probe ? `<div class="probe"><b>What would move this:</b> ${item.probe}</div>` : ''}
+    ${item.link ? `<div class="learn"><a href="${item.link}" target="_blank" rel="noopener">Learn more ↗</a></div>` : ''}
+    <div class="slider-row">
+      <span class="end">${endL}</span>
+      <input type="range" min="0" max="100" value="50" id="sl_${item.id}"
+        aria-label="${item.tag} ${item.name}">
+      <span class="end r">${endR}</span>
+    </div>
+    <div class="feeds">${item.feeds.map(chipHtml).join('')}</div>`;
+  return div;
+}
+
+const beliefWrap = document.getElementById('beliefCards');
+BELIEFS.forEach(b=>beliefWrap.appendChild(buildCard(b,'belief')));
+const valueWrap = document.getElementById('valueCards');
+VALUES.forEach(v=>valueWrap.appendChild(buildCard(v,'value')));
+
+/* ============================================================
+   RENDER — readout
+============================================================ */
+function renderAll(){
+  const r = computePulls(state);
+
+  // numbers on cards
+  [...BELIEFS, ...VALUES].forEach(it=>{
+    document.getElementById('num_'+it.id).textContent = state[it.id] + '%';
+  });
+  document.getElementById('num_risk').textContent = riskMult(state.risk).toFixed(2) + '\u00d7';
+
+  // beam
+  const scale = Math.max(r.O, r.C, 0.0001);
+  const fillPct = arr => arr.map(p => (p.value/scale)*88); // larger side fills ~88% of its half
+  const beamOpen = document.getElementById('beamOpen');
+  const beamClosed = document.getElementById('beamClosed');
+  beamOpen.innerHTML = r.open.map((p,i)=>`<div class="beam-seg" style="width:${(p.value/scale)*88}%" title="${p.name}: ${p.value.toFixed(2)}"></div>`).join('');
+  beamClosed.innerHTML = r.closed.map((p,i)=>`<div class="beam-seg" style="width:${(p.value/scale)*88}%" title="${p.name}: ${p.value.toFixed(2)}"></div>`).join('');
+  const needlePos = 50 - r.net*44; // net + => open => left
+  document.getElementById('beamNeedle').style.left = needlePos + '%';
+  document.getElementById('totOpen').textContent = 'open ' + r.O.toFixed(2);
+  document.getElementById('totClosed').textContent = 'closed ' + r.C.toFixed(2);
+  const bi = bandIndex(r.net);
+  document.getElementById('bandName').textContent = BANDS[bi];
+  document.querySelectorAll('.spectrum-legend div').forEach(d=>{
+    d.classList.toggle('active', +d.dataset.band === bi);
+  });
+
+  // pull table
+  const maxPull = Math.max(...r.open.map(p=>p.value), ...r.closed.map(p=>p.value), 0.0001);
+  const magTip = 'Pull strength: the wiring formula evaluated with your current sliders. Compare lengths across rows; color shows which pole it pulls toward. Only relative size matters.';
+  const row = (p, side) => `
+    <tr>
+      <td class="pname"><span class="has-tip" title="${p.desc}">${p.name}</span></td>
+      <td class="formula">${p.formula}</td>
+      <td class="pullbar-cell"><div class="pullbar tip-cursor" title="${magTip} This row: ${p.value.toFixed(2)} toward ${side}."><div class="fill ${side}" style="width:${(p.value/maxPull)*100}%"></div></div></td>
+      <td class="pval" style="color:var(--${side})">${p.value.toFixed(2)}</td>
+    </tr>`;
+  document.getElementById('pullRows').innerHTML =
+    r.open.map(p=>row(p,'open')).join('') + r.closed.map(p=>row(p,'closed')).join('');
+
+  renderTornado(r);
+  renderWhy(r);
+}
+
+/* ============================================================
+   RENDER — tornado + flip list
+============================================================ */
+function netWith(id, val){
+  const s = Object.assign({}, state);
+  s[id] = val;
+  return computePulls(s).net;
+}
+
+function findCrossing(id){
+  // binary search for the slider value where net = 0
+  let lo=0, hi=100;
+  let nLo = netWith(id,0), nHi = netWith(id,100);
+  if(nLo===0) return 0; if(nHi===0) return 100;
+  if(Math.sign(nLo)===Math.sign(nHi)) return null;
+  for(let i=0;i<24;i++){
+    const mid=(lo+hi)/2, nMid=netWith(id,mid);
+    if(Math.sign(nMid)===Math.sign(nLo)){lo=mid;} else {hi=mid;}
+  }
+  return Math.round((lo+hi)/2);
+}
+
+function renderTornado(current){
+  const items = [...BELIEFS.map(b=>({...b,kind:'belief'})), ...VALUES.map(v=>({...v,kind:'value'})), {id:'risk', tag:'R', name:'RISK ATTITUDE', kind:'dial'}];
+  const rows = items.map(it=>{
+    const nLo = netWith(it.id,0), nHi = netWith(it.id,100);
+    return {it, nLo, nHi, swing:Math.abs(nHi-nLo), crosses:Math.sign(nLo)!==Math.sign(nHi) && nLo!==nHi};
+  }).sort((a,b)=>b.swing-a.swing);
+
+  const x = n => 50 - n*50; // net + (open) => left
+  const html = rows.map(r=>{
+    const a = Math.min(x(r.nLo), x(r.nHi));
+    const w = Math.abs(x(r.nHi)-x(r.nLo));
+    // color: which pole does raising this input favor?
+    const favorsOpen = r.nHi > r.nLo;
+    const col = favorsOpen ? 'var(--open)' : 'var(--closed)';
+    const nowX = x(current.net);
+    return `
+      <div class="trow">
+        <div class="tname">${r.it.name.charAt(0)+r.it.name.slice(1).toLowerCase()}<span class="tt">${r.it.tag} · ${r.it.kind} · swing ${(r.swing).toFixed(2)}</span></div>
+        <div class="taxis">
+          <div class="zero"></div>
+          <div class="span" style="left:${a}%; width:${Math.max(w,0.8)}%; background:${col}"></div>
+          <div class="now" style="left:${nowX}%"></div>
+        </div>
+        <div class="tflip ${r.crosses?'hot':''}">${r.crosses ? 'can flip the lean' : '—'}</div>
+      </div>`;
+  }).join('');
+  document.getElementById('tornadoRows').innerHTML = html;
+
+  // flip list
+  const flips = rows.filter(r=>r.crosses).slice(0,6).map(r=>{
+    const c = findCrossing(r.it.id);
+    if(c===null) return '';
+    const raisedSide = (netWith(r.it.id,100) > 0) ? 'open' : 'closed';
+    const lowSide = raisedSide==='open' ? 'closed' : 'open';
+    return `<li><b>${r.it.tag} ${r.it.name.toLowerCase()}</b> crosses your balance near <span class="mono">${c}%</span> — above that the beam leans <span class="fl-${raisedSide}">${raisedSide}</span>, below it <span class="fl-${lowSide}">${lowSide}</span>. You currently have it at ${state[r.it.id]}%.</li>`;
+  }).join('');
+  document.getElementById('flipList').innerHTML = flips
+    ? `<b style="color:var(--text)">Flip conditions (holding everything else fixed):</b>${flips}`
+    : `<li>No single input can flip your lean on its own — the beam sits ${Math.abs(current.net).toFixed(2)} out of a possible 1.0 from the balance point, far enough that the position is robust to any one change of mind. To find your real crossing conditions, move related inputs together (for example, B1 down while B2 rises).</li>`;
+}
+
+/* ============================================================
+   WHY DID I LAND HERE? — deterministic explanation panel
+============================================================ */
+const CLUSTERS = [
+  {id:'cat',  name:'Catastrophe & conflict',      vals:['v1','v8','v10','v11','v12']},
+  {id:'pow',  name:'Power, autonomy & privacy',   vals:['v2','v3','v4','v5','v13']},
+  {id:'soc',  name:'Society & knowledge',         vals:['v6','v7','v14','v15','v16']},
+  {id:'prac', name:'Practical capability',        vals:['v9','v17']},
+];
+
+function titleCase(n){ return n.charAt(0) + n.slice(1).toLowerCase(); }
+
+function gatesFor(p){
+  const m = (p.formula.match(/B\d+/g) || []);
+  const gs = [...new Set(m)].map(t => t + '=' + state[t.toLowerCase()] + '%');
+  if(p.formula.indexOf('\u00b7 R') !== -1) gs.push('R=' + riskMult(state.risk).toFixed(2) + '\u00d7');
+  return gs.join(', ');
+}
+
+function renderWhy(r){
+  const all = [...r.open.map(p=>({...p, side:'open'})), ...r.closed.map(p=>({...p, side:'closed'}))];
+
+  // group pulls by the value that generates them (exact attribution: each pull has exactly one value)
+  const byVal = {};
+  VALUES.forEach(v => byVal[v.id] = {open:[], closed:[], o:0, c:0, def:v});
+  all.forEach(p => {
+    const g = byVal[p.v]; if(!g) return;
+    g[p.side].push(p);
+    if(p.side==='open') g.o += p.value; else g.c += p.value;
+  });
+
+  // clusters
+  const cdata = CLUSTERS.map(cl => {
+    let o=0, c=0;
+    cl.vals.forEach(id => { o += byVal[id].o; c += byVal[id].c; });
+    return {...cl, o, c, diff: o - c};
+  });
+
+  // headline
+  const bi = bandIndex(r.net);
+  const sorted = [...cdata].sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+  const lead = sorted[0];
+  const washes = cdata.filter(x => Math.abs(x.diff) < 0.15 * Math.max(x.o + x.c, 0.001)).map(x=>x.name);
+
+  const items = [...BELIEFS.map(b=>({id:b.id, tag:b.tag, name:b.name})),
+                 ...VALUES.map(v=>({id:v.id, tag:v.tag, name:v.name})),
+                 {id:'risk', tag:'R', name:'RISK ATTITUDE'}];
+  const sw = items.map(it => {
+    const lo = netWith(it.id, 0), hi = netWith(it.id, 100);
+    return {it, swing: Math.abs(hi-lo), crosses: Math.sign(lo)!==Math.sign(hi) && lo!==hi};
+  }).sort((a,b)=>b.swing-a.swing);
+  const top3 = sw.slice(0,3).map(s=>`${s.it.tag} ${titleCase(s.it.name)} (swing ${s.swing.toFixed(2)})`).join(', ');
+  const nCross = sw.filter(s=>s.crosses).length;
+
+  document.getElementById('whyHeadline').innerHTML = `
+    <p>Your inputs net <b>${r.net>=0?'+':''}${r.net.toFixed(2)}</b> \u2014 the neighborhood of <b>${BANDS[bi]}</b> \u2014 from ${r.O.toFixed(2)} of open pull against ${r.C.toFixed(2)} of closed.</p>
+    <p>The lean is driven mostly by <b>${lead.name}</b> (open ${lead.o.toFixed(2)} vs closed ${lead.c.toFixed(2)}, net ${lead.diff>=0?'open':'closed'} by ${Math.abs(lead.diff).toFixed(2)}).${washes.length ? ` Nearly a wash: ${washes.join('; ')}.` : ''}</p>
+    <p>Most load-bearing inputs right now: ${top3}. ${nCross ? nCross + ' input' + (nCross>1?'s':'') + ' could cross the balance point alone \u2014 see the flip list below.' : 'No single input crosses the balance point alone.'}</p>`;
+
+  // cluster rows
+  const cmax = Math.max(...cdata.map(x=>Math.max(x.o, x.c)), 0.001);
+  document.getElementById('clusterRows').innerHTML = cdata.map(x=>`
+    <div class="cl-row">
+      <div class="cl-name">${x.name}</div>
+      <div class="cl-bars">
+        <div class="cl-half l"><div class="cl-fill open" style="width:${x.o/cmax*100}%"></div></div>
+        <div class="cl-half r"><div class="cl-fill closed" style="width:${x.c/cmax*100}%"></div></div>
+      </div>
+      <div class="cl-num mono">${x.diff>=0?'+':''}${x.diff.toFixed(2)}</div>
+    </div>`).join('');
+
+  // value-by-value attribution (exact, plus leave-one-out counterfactual)
+  const rows = VALUES.map(v => {
+    const g = byVal[v.id];
+    const contrib = g.o - g.c;
+    const without = computePulls(Object.assign({}, state, {[v.id]: 0})).net;
+    return {v, g, contrib, without};
+  }).sort((a,b)=>Math.abs(b.contrib)-Math.abs(a.contrib));
+  const amax = Math.max(...rows.map(x=>Math.abs(x.contrib)), 0.001);
+  document.getElementById('attribRows').innerHTML = rows.map(x=>`
+    <div class="at-row">
+      <div class="at-name">${titleCase(x.v.name)}<span class="tt">${x.v.tag} \u00b7 weight ${state[x.v.id]}</span></div>
+      <div class="at-axis"><div class="zero"></div><div class="at-fill ${x.contrib>=0?'open':'closed'}" style="${x.contrib>=0 ? 'right:50%' : 'left:50%'}; width:${Math.abs(x.contrib)/amax*48}%"></div></div>
+      <div class="at-num">${x.contrib>=0?'+':''}${x.contrib.toFixed(2)}<span class="tt">without it: net ${x.without>=0?'+':''}${x.without.toFixed(2)}</span></div>
+    </div>`).join('');
+
+  // contested-value routing
+  const contested = rows.filter(x => x.g.open.length && x.g.closed.length);
+  document.getElementById('routeRows').innerHTML = contested.map(x=>{
+    const total = x.g.o + x.g.c || 0.001;
+    const pct = Math.round(x.g.o/total*100);
+    const oTxt = x.g.open.map(p=>`${p.name} ${p.value.toFixed(2)} (${gatesFor(p)||'ungated'})`).join('; ');
+    const cTxt = x.g.closed.map(p=>`${p.name} ${p.value.toFixed(2)} (${gatesFor(p)||'ungated'})`).join('; ');
+    return `<div class="rt-row"><b>${titleCase(x.v.name)}</b> (weight ${state[x.v.id]}) routed <span class="mono">${pct}% open / ${100-pct}% closed</span>.<br>
+      <span class="rt-o">Open: ${oTxt}.</span><br><span class="rt-c">Closed: ${cTxt}.</span></div>`;
+  }).join('');
+}
+
+/* ============================================================
+   PERSISTENCE + EXPORT
+============================================================ */
+async function saveSession(silent){
+  const payload = {sliders:{...state}, notes:{}};
+  NOTE_IDS.forEach(id=>payload.notes[id]=document.getElementById(id).value);
+  try{
+    if(window.storage){
+      await window.storage.set(STORAGE_KEY, JSON.stringify(payload));
+      if(!silent) flash('Saved.');
+    } else if(!silent){ flash('Storage unavailable here — use Copy summary instead.'); }
+  }catch(e){ if(!silent) flash('Save failed — use Copy summary instead.'); }
+}
+
+async function loadSession(){
+  try{
+    if(!window.storage) return;
+    const res = await window.storage.get(STORAGE_KEY);
+    if(res && res.value){
+      const p = JSON.parse(res.value);
+      Object.keys(p.sliders||{}).forEach(k=>{
+        if(k in state){ state[k]=p.sliders[k]; const sl=document.getElementById('sl_'+k); if(sl) sl.value=p.sliders[k]; }
+      });
+      NOTE_IDS.forEach(id=>{ if(p.notes && p.notes[id]!==undefined) document.getElementById(id).value=p.notes[id]; });
+      flash('Previous session restored.');
+    }
+  }catch(e){ /* no prior session */ }
+}
+
+function exportMarkdown(){
+  const r = computePulls(state);
+  const bi = bandIndex(r.net);
+  const lines = [];
+  lines.push('# Open vs closed — elicitation snapshot');
+  lines.push('');
+  lines.push(`Needle: **${BANDS[bi]}** (net ${r.net>=0?'+':''}${r.net.toFixed(2)}, open ${r.O.toFixed(2)} / closed ${r.C.toFixed(2)}) — a mirror of my inputs, not a verdict.`);
+  lines.push('');
+  lines.push('## Credences');
+  BELIEFS.forEach(b=>lines.push(`- ${b.tag} ${b.name.toLowerCase()}: **${state[b.id]}%** — ${b.stmt}`));
+  lines.push('');
+  lines.push('## Value weights');
+  VALUES.forEach(v=>lines.push(`- ${v.tag} ${v.name.toLowerCase()}: **${state[v.id]}**`));
+  lines.push(`- R risk attitude: **${riskMult(state.risk).toFixed(2)}\u00d7** on catastrophe-class pulls`);
+  lines.push('');
+  lines.push('## Pulls');
+  r.open.forEach(p=>lines.push(`- open · ${p.name}: ${p.value.toFixed(2)}`));
+  r.closed.forEach(p=>lines.push(`- closed · ${p.name}: ${p.value.toFixed(2)}`));
+  lines.push('');
+  lines.push('## Clusters');
+  CLUSTERS.forEach(cl=>{ let o=0,c=0; r.open.forEach(p=>{ if(cl.vals.includes(p.v)) o+=p.value; }); r.closed.forEach(p=>{ if(cl.vals.includes(p.v)) c+=p.value; }); lines.push(`- ${cl.name}: open ${o.toFixed(2)} / closed ${c.toFixed(2)}`); });
+  lines.push('');
+  const noteTitles = {noteTripwire:'Tripwire', notePersonal:'Personal stack', noteAuthor:'Public advocacy', noteTara:'What you build', noteWiring:'Disagreements with the wiring'};
+  lines.push('## Articulation');
+  NOTE_IDS.forEach(id=>{
+    const v = document.getElementById(id).value.trim();
+    if(v) lines.push(`**${noteTitles[id]}:** ${v}\n`);
+  });
+  const md = lines.join('\n');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(md).then(()=>flash('Summary copied to clipboard.'), ()=>fallbackCopy(md));
+  } else fallbackCopy(md);
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta);
+  ta.select(); try{document.execCommand('copy'); flash('Summary copied.');}catch(e){flash('Copy failed — select and copy manually.');}
+  document.body.removeChild(ta);
+}
+
+let flashTimer=null;
+function flash(msg){
+  const el=document.getElementById('statusMsg'); el.textContent=msg;
+  clearTimeout(flashTimer); flashTimer=setTimeout(()=>el.textContent='',3500);
+}
+
+/* ============================================================
+   WIRING UP
+============================================================ */
+let saveDebounce=null;
+function queueAutosave(){ clearTimeout(saveDebounce); saveDebounce=setTimeout(()=>saveSession(true), 1200); }
+
+[...BELIEFS, ...VALUES].forEach(it=>{
+  const sl = document.getElementById('sl_'+it.id);
+  sl.addEventListener('input', ()=>{ state[it.id]=+sl.value; renderAll(); queueAutosave(); });
+});
+const riskSl = document.getElementById('sl_risk');
+riskSl.addEventListener('input', ()=>{ state.risk=+riskSl.value; renderAll(); queueAutosave(); });
+NOTE_IDS.forEach(id=>document.getElementById(id).addEventListener('input', queueAutosave));
+
+document.getElementById('btnSave').addEventListener('click', ()=>saveSession(false));
+document.getElementById('btnExport').addEventListener('click', exportMarkdown);
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  [...BELIEFS, ...VALUES].forEach(it=>{ state[it.id]=50; document.getElementById('sl_'+it.id).value=50; });
+  state.risk=50; document.getElementById('sl_risk').value=50;
+  renderAll(); flash('Sliders reset. Notes kept.');
+});
+
+loadSession().then(renderAll);
+renderAll();
+</script>
+</body>
+</html>
